@@ -1,94 +1,57 @@
 
+     
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MiniShorts</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b0b12;
-      color: white;
-      min-height: 100vh;
-    }
-    header {
-      padding: 22px;
-      border-bottom: 1px solid #292936;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    header span { color: #a78bfa; }
-    main {
-      width: min(650px, 92%);
-      margin: 55px auto;
-    }
-    h1 { font-size: 38px; margin-bottom: 10px; }
-    p { color: #aaaaba; line-height: 1.6; }
-    .panel {
-      background: #15151f;
-      padding: 24px;
-      border: 1px solid #303041;
-      border-radius: 18px;
-      margin-top: 25px;
-    }
-    label {
-      display: block;
-      margin: 18px 0 8px;
-      font-weight: bold;
-    }
-    input, select {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #38384b;
-      border-radius: 10px;
-      background: #0d0d16;
-      color: white;
-      font-size: 15px;
-    }
-    button {
-      width: 100%;
-      padding: 15px;
-      margin-top: 22px;
-      border: 0;
-      border-radius: 10px;
-      color: white;
-      background: #7c3aed;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover { background: #6d28d9; }
-    #resultado {
-      margin-top: 20px;
-      overflow-wrap: anywhere;
-    }
-    .nota {
-      font-size: 13px;
-      color: #88889b;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiniShorts</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#0b0b12;color:#fff;
+  font-family:Arial,sans-serif
+}
+header{
+  padding:22px;border-bottom:1px solid #292936;
+  font-size:24px;font-weight:bold
+}
+header span{color:#a78bfa}
+main{max-width:650px;margin:40px auto;padding:20px}
+.panel{
+  background:#15151f;border:1px solid #343448;
+  padding:24px;border-radius:18px
+}
+p{color:#b8b8c8;line-height:1.6}
+label{display:block;margin:18px 0 8px}
+input,select{
+  width:100%;padding:14px;border-radius:10px;
+  border:1px solid #38384b;background:#0d0d16;
+  color:white;font-size:15px
+}
+button{
+  width:100%;padding:15px;margin-top:20px;
+  border:0;border-radius:10px;background:#7c3aed;
+  color:white;font-weight:bold;font-size:16px
+}
+button:disabled{opacity:.5}
+#status{white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
 </head>
 <body>
-  <header>🎬 Mini<span>Shorts</span></header>
+<header>🎬 Mini<span>Shorts</span></header>
+<main>
+  <h1>De video largo a Shorts.</h1>
+  <p>Subí un video, elegí la duración y descargá tus clips verticales.</p>
 
-  <main>
-    <h1>De video largo a clips cortos.</h1>
-    <p>
-      Prepará tus Shorts en formato vertical.
-      Elegí la duración y organizá tus clips.
-    </p>
+  <section class="panel">
+    <form id="form">
+      <label for="video">Elegí tu archivo de video</label>
+      <input id="video" name="video" type="file"
+        accept="video/*" required>
 
-    <section class="panel">
-      <label for="url">Link de YouTube</label>
-      <input id="url" type="url"
-        placeholder="https://www.youtube.com/watch?v=..."
-        required>
-
-      <label for="duracion">Duración de cada Short</label>
-      <select id="duracion">
+      <label for="seconds">Duración de cada clip</label>
+      <select id="seconds" name="seconds">
         <option value="15">15 segundos</option>
         <option value="30" selected>30 segundos</option>
         <option value="45">45 segundos</option>
@@ -96,93 +59,76 @@
         <option value="90">90 segundos</option>
       </select>
 
-      <label for="modo">Tipo de división</label>
-      <select id="modo">
-        <option value="consecutivo">
-          Dividir en partes consecutivas
-        </option>
-        <option value="momentos">
-          Buscar los mejores momentos (requiere IA)
-        </option>
-      </select>
+      <button id="submit" type="submit">Generar Shorts</button>
+    </form>
+    <p id="status" role="status"></p>
+  </section>
+</main>
 
-      <button onclick="preparar()">Preparar mis Shorts</button>
-      <div id="resultado" aria-live="polite"></div>
-    </section>
+<script>
+const API_URL = "https://TU-SERVIDOR.onrender.com";
 
-    <p class="nota">
-      MiniShorts · Usá videos propios o que tengas
-      autorización para editar.
-    </p>
-  </main>
+const form = document.getElementById("form");
+const button = document.getElementById("submit");
+const status = document.getElementById("status");
 
-  <script>
-    function preparar() {
-      const url = document.getElementById("url").value.trim();
-      const duracion = document.getElementById("duracion").value;
-      const modo = document.getElementById("modo").value;
-      const resultado = document.getElementById("resultado");
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-      let videoId = "";
+  const file = document.getElementById("video").files[0];
 
+  if (!file) {
+    status.textContent = "Primero elegí un video.";
+    return;
+  }
+
+  if (file.size > 300 * 1024 * 1024) {
+    status.textContent = "El archivo supera los 300 MB.";
+    return;
+  }
+
+  const data = new FormData();
+  data.append("video", file);
+  data.append("seconds", document.getElementById("seconds").value);
+
+  button.disabled = true;
+  status.textContent = "Procesando el video. No cierres esta página…";
+
+  try {
+    const response = await fetch(API_URL + "/api/split", {
+      method: "POST",
+      body: data
+    });
+
+    if (!response.ok) {
+      let message = "No se pudo procesar el video.";
       try {
-        const u = new URL(url);
-
-        if (u.hostname === "youtu.be") {
-          videoId = u.pathname.slice(1).split("/")[0];
-        } else if (
-          ["youtube.com", "www.youtube.com",
-           "m.youtube.com", "youtube-nocookie.com",
-           "www.youtube-nocookie.com"].includes(u.hostname)
-        ) {
-          if (u.pathname === "/watch") {
-            videoId = u.searchParams.get("v") || "";
-          } else {
-            const match = u.pathname.match(
-              /^\/(?:shorts|embed)\/([^/]+)/
-            );
-            if (match) videoId = match[1];
-          }
-        }
+        const error = await response.json();
+        message = error.detail || message;
       } catch (_) {}
-
-      if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-        resultado.textContent =
-          "Pegá un enlace válido de un video de YouTube.";
-        return;
-      }
-
-      if (modo === "momentos") {
-        resultado.textContent =
-          "La detección de mejores momentos necesita conectar " +
-          "un servicio de IA. Todavía no está configurado.";
-        return;
-      }
-
-      const segundos = Number(duracion);
-
-      resultado.innerHTML = "";
-
-      const titulo = document.createElement("p");
-      titulo.textContent =
-        "Video identificado. Cada clip tendrá " +
-        segundos + " segundos como máximo.";
-      resultado.appendChild(titulo);
-
-      const aviso = document.createElement("p");
-      aviso.textContent =
-        "Esta página es la interfaz. Para generar y descargar " +
-        "los archivos MP4 hay que conectar el procesador de video.";
-      resultado.appendChild(aviso);
-
-      const enlace = document.createElement("a");
-      enlace.href = "https://www.youtube.com/watch?v=" + videoId;
-      enlace.target = "_blank";
-      enlace.rel = "noopener noreferrer";
-      enlace.textContent = "Abrir video original en YouTube";
-      enlace.style.color = "#c4b5fd";
-      resultado.appendChild(enlace);
+      throw new Error(message);
     }
-  </script>
+
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = downloadUrl;
+    link.download = "minishorts.zip";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
+    status.textContent = "¡Listo! Se descargó el ZIP con tus Shorts.";
+  } catch (error) {
+    status.textContent =
+      "Error: " + error.message +
+      "\nComprobá que el servidor esté publicado y disponible.";
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
 </body>
 </html>
